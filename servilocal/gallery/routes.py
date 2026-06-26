@@ -3,11 +3,11 @@ from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from servilocal.gallery.models import Gallery
 from servilocal.providers.models import Provider
+from servilocal.cloudinary_helper import upload_image
 
 ns = Namespace('gallery', description='Gallery operations')
 
 gallery_model = ns.model('Gallery', {
-    'image_url': fields.String(required=True),
     'service_id': fields.String(required=False),
     'caption': fields.String(required=False)
 })
@@ -15,7 +15,6 @@ gallery_model = ns.model('Gallery', {
 @ns.route('/')
 class GalleryList(Resource):
     @jwt_required()
-    @ns.expect(gallery_model)
     def post(self):
         current_user_id = get_jwt_identity()
 
@@ -23,18 +22,26 @@ class GalleryList(Resource):
         if not provider:
             return {'error': 'You must have a provider profile to upload photos'}, 403
 
-        data = request.json
+        if 'image' not in request.files:
+            return {'error': 'No image file provided'}, 400
+
+        file = request.files['image']
+        if file.filename == '':
+            return {'error': 'No image selected'}, 400
+
         try:
+            image_url = upload_image(file, folder='servilocal/gallery')
+
             item = Gallery(
                 provider_id=provider.id,
-                image_url=data['image_url'],
-                service_id=data.get('service_id'),
-                caption=data.get('caption')
+                image_url=image_url,
+                service_id=request.form.get('service_id'),
+                caption=request.form.get('caption')
             )
             item.save()
             return item.to_dict(), 201
-        except ValueError as e:
-            return {'error': str(e)}, 400
+        except Exception as e:
+            return {'error': str(e)}, 500
 
 @ns.route('/<string:gallery_id>')
 class GalleryResource(Resource):
@@ -59,3 +66,4 @@ class GalleryResource(Resource):
 
         item.delete()
         return {'message': 'Gallery item deleted successfully'}, 200
+    

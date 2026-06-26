@@ -39,7 +39,8 @@ def create_app(config_name='default'):
     from servilocal.bookings.routes import ns as bookings_ns
     from servilocal.reviews.routes import ns as reviews_ns
     from servilocal.gallery.routes import ns as gallery_ns
-
+    from servilocal.search.routes import ns as search_ns
+    
     api.add_namespace(auth_ns, path='/api/v1/auth')
     api.add_namespace(users_ns, path='/api/v1/users')
     api.add_namespace(providers_ns, path='/api/v1/providers')
@@ -48,5 +49,6 @@ def create_app(config_name='default'):
     api.add_namespace(bookings_ns, path='/api/v1/bookings')
     api.add_namespace(reviews_ns, path='/api/v1/reviews')
     api.add_namespace(gallery_ns, path='/api/v1/gallery')
-
+    api.add_namespace(search_ns, path='/api/v1/search')
+    
     return app
